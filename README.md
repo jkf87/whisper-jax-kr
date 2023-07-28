@@ -1,42 +1,43 @@
 # Whisper JAX
 
-This repository contains optimised JAX code for OpenAI's [Whisper Model](https://arxiv.org/abs/2212.04356), largely built 
-on the 🤗 Hugging Face Transformers Whisper implementation. Compared to OpenAI's PyTorch code, Whisper JAX runs over **70x** 
-faster, making it the fastest Whisper implementation available.
+이 리포지토리에는 OpenAI의 [Whisper Model]https://arxiv.org/abs/2212.04356), 대체로 구축됨를 사용하여 포옹하는 허깅페이스 트랜스포머 Whisper 구현을 살펴보세요.
+OpenAI의 PyTorch 코드와 비교했을 때, Whisper JAX는 **70배** 이상 실행됩니다.
+더 빨라져 가장 빠른 Whisper 구현이 가능해졌습니다.
 
-The JAX code is compatible on CPU, GPU and TPU, and can be run standalone (see [Pipeline Usage](#pipeline-usage)) or 
-as an inference endpoint (see [Creating an Endpoint](#creating-an-endpoint)).
+JAX 코드는 CPU, GPU 및 TPU에서 호환됩니다, 
+독립적으로 실행할 수 있습니다(파이프라인 사용(#pipeline-.사용법)) 
+또는 추론 엔드포인트로 사용할 수 있습니다([엔드포인트 만들기(#creating-.엔드포인트)).
 
-For a quick-start guide to running Whisper JAX on a Cloud TPU, refer to the following Kaggle notebook, where we transcribe 30 mins of audio in approx 30 sec:
+클라우드 TPU에서 Whisper JAX를 실행하는 빠른 시작 가이드는 30분 분량의 오디오를 약 30초 분량으로 트랜스크립션한 다음 Kaggle 노트북을 참조하세요:
 
 [![Kaggle](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/sgandhi99/whisper-jax-tpu)
 
-The Whisper JAX model is also running as a demo on the Hugging Face Hub:
+위스퍼 JAX 모델도 허깅 페이스 허브에서 데모로 실행되고 있습니다:
 
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/sanchit-gandhi/whisper-jax)
 
 ## Installation
 
-Whisper JAX was tested using Python 3.9 and JAX version 0.4.5. Installation assumes that you already have the latest 
-version of the JAX package installed on your device. You can do so using the official JAX installation guide: https://github.com/google/jax#installation
+Whisper JAX는 Python 3.9 및 JAX 버전 0.4.5를 사용하여 테스트되었습니다. 
+설치 시에는 이미 최신버전의 JAX 패키지를 설치해야 합니다. 공식 JAX 설치 가이드를 사용하여 설치할 수 있습니다.: https://github.com/google/jax#installation
 
-Once the appropriate version of JAX has been installed, Whisper JAX can be installed through pip:
+적절한 버전의 JAX가 설치되면 pip를 통해 Whisper JAX를 설치할 수 있습니다.:
 ```
 pip install git+https://github.com/sanchit-gandhi/whisper-jax.git
 ```
 
-To update the Whisper JAX package to the latest version, simply run:
+Whisper JAX 패키지를 최신 버전으로 업데이트하려면 다음을 실행하면 됩니다.:
 ```
 pip install --upgrade --no-deps --force-reinstall git+https://github.com/sanchit-gandhi/whisper-jax.git
 ```
 
 ## Pipeline Usage
 
-The recommended way of running Whisper JAX is through the [`FlaxWhisperPipline`](https://github.com/sanchit-gandhi/whisper-jax/blob/main/whisper_jax/pipeline.py#L57) abstraction class. This class handles all
-the necessary pre- and post-processing, as well as wrapping the generate method for data parallelism across accelerator devices.
+The recommended way of running Whisper JAX is through the [`FlaxWhisperPipline`](https://github.com/sanchit-gandhi/whisper-jax/blob/main/whisper_jax/pipeline.py#L57) abstraction class. 
+이 클래스는 가속기 장치에서 데이터 병렬 처리를 위한 생성 메서드를 래핑할 뿐만 아니라 필요한 모든 전처리 및 후처리를 처리합니다.
 
-Whisper JAX makes use of JAX's [`pmap`](https://jax.readthedocs.io/en/latest/_autosummary/jax.pmap.html) function for data parallelism across GPU/TPU devices. This function is _Just In Time (JIT)_ 
-compiled the first time it is called. Thereafter, the function will be _cached_, enabling it to be run in super-fast time:
+Whisper JAX는 JAX의 [`pmap`](https://jax.readthedocs.io/ko/latest/_autosummary/jax.pmap.html) 함수는 GPU/TPU 장치 간 데이터 병렬 처리를 위한 함수입니다. 
+이 함수는 _JIT(Just In Time)_입니다.함수가 처음 호출될 때 컴파일됩니다. 그 이후에는 함수가 _캐시_되어 매우 빠른 시간 내에 실행될 수 있습니다.:
 
 ```python
 from whisper_jax import FlaxWhisperPipline
@@ -53,11 +54,10 @@ text = pipeline("audio.mp3")
 
 ### Half-Precision
 
-The model computation can be run in half-precision by passing the dtype argument when instantiating the pipeline. This will 
-speed-up the computation quite considerably by storing intermediate tensors in half-precision. There is no change to the precision 
-of the model weights.
+파이프라인을 인스턴스화할 때 dtype 인수를 전달하면 모델 계산을 반정밀로 실행할 수 있습니다. 
+이렇게 하면 중간 텐서를 반정밀도로 저장하여 계산 속도를 상당히 높입니다. 정밀도에는 변화가 없습니다
 
-For most GPUs, the dtype should be set to `jnp.float16`. For A100 GPUs or TPUs, the dtype should be set to `jnp.bfloat16`:
+대부분의 GPU의 경우, dtype은 `jnp.float16`로 설정해야 합니다. A100 GPU 또는 TPU의 경우, dtype을 `jnp.bfloat16`로 설정해야 합니다.:
 ```python
 from whisper_jax import FlaxWhisperPipline
 import jax.numpy as jnp
@@ -67,12 +67,12 @@ pipeline = FlaxWhisperPipline("openai/whisper-large-v2", dtype=jnp.bfloat16)
 ```
 
 ### Batching
-Whisper JAX also provides the option of _batching_ a single audio input across accelerator devices. The audio is first 
-chunked into 30 second segments, and then chunks dispatched to the model to be transcribed in parallel. The resulting 
-transcriptions are stitched back together at the boundaries to give a single, uniform transcription. In practice, batching 
-provides a 10x speed-up compared to transcribing the audio samples sequentially, with a less than 1% penalty to the WER[^1], provided the batch size is selected large enough. 
+Whisper JAX는 가속기 장치에서 단일 오디오 입력을 일괄 처리하는 _ 옵션도 제공합니다. 
+오디오가 먼저를 30초 세그먼트로 분할한 다음 모델에 청크를 전송하여 병렬로 전사합니다. 
+그 결과트랜스 크립 션은 경계에서 다시 스티칭되어 단일하고 균일 한 트랜스 크립 션을 제공합니다.
+실제로 일괄 처리는 배치 크기를 충분히 크게 선택하면 오디오 샘플을 순차적으로 전사할 때보다 10배 빠른 속도를 제공하며, WER^1
 
-To enable batching, pass the `batch_size` parameter when you instantiate the pipeline:
+일괄 처리를 활성화하려면 파이프라인을 인스턴스화할 때 `batch_size` 매개 변수를 전달하세요:
 
 ```python
 from whisper_jax import FlaxWhisperPipline
@@ -83,7 +83,7 @@ pipeline = FlaxWhisperPipline("openai/whisper-large-v2", batch_size=16)
 
 ### Task
 
-By default, the pipeline transcribes the audio file in the language it was spoken in. For speech translation, set the 
+기본적으로 파이프라인은 음성 파일이 사용된 언어로 오디오 파일을 트랜스크립션합니다. For speech translation, set the 
 `task` argument to `"translate"`:
 
 ```python
@@ -93,8 +93,8 @@ text = pipeline("audio.mp3", task="translate")
 
 ### Timestamps
 
-The [`FlaxWhisperPipline`](https://github.com/sanchit-gandhi/whisper-jax/blob/main/whisper_jax/pipeline.py#L57) also supports timestamp prediction. Note that enabling timestamps will require a second JIT compilation of the 
-forward call, this time including the timestamp outputs:
+[`FlaxWhisperPipeline`](https://github.com/sanchit-gandhi/whisper-jax/blob/main/whisper_jax/pipeline.py#L57)도 타임스탬프 예측을 지원합니다. 
+타임스탬프를 활성화하면 두 번째 JIT 컴파일이 필요합니다.착신 전환, 이번에는 타임스탬프 출력 포함:
 
 ```python
 # transcribe and return timestamps
@@ -104,8 +104,8 @@ chunks = outputs["chunks"]  # transcription + timestamps
 ```
 
 ### Putting it all together
-In the following code snippet, we instantiate the model in bfloat16 precision with batching enabled, and transcribe the audio file 
-returning timestamps tokens: 
+다음 코드 스니펫에서는 배치가 활성화된 상태에서 bfloat16 정밀도로 모델을 인스턴스화하고 오디오 파일을 트랜스크립션합니다.
+타임스탬프 토큰 반환: 
 
 ```python
 from whisper_jax import FlaxWhisperPipline
@@ -120,8 +120,8 @@ outputs = pipeline("audio.mp3",  task="transcribe", return_timestamps=True)
 
 ## Model Usage
 
-The Whisper JAX model can use on a more granular level in much the same way as the original Hugging Face 
-Transformers implementation. This requires the Whisper processor to be loaded separately to the model to handle the
+위스퍼 JAX 모델은 원래의 허깅 페이스와 거의 동일한 방식으로 더 세분화된 수준에서 사용할 수 있습니다.트랜스포머 구현. 
+This requires the Whisper processor to be loaded separately to the model to handle the
 pre- and post-processing, and the generate function to be wrapped using `pmap` by hand:
 
 ```python
@@ -169,8 +169,7 @@ transcription = processor.batch_decode(pred_ids, skip_special_tokens=True)
 ```
 
 ## Available Models and Languages
-All Whisper models on the Hugging Face Hub with Flax weights are compatible with Whisper JAX. This includes, but is not limited to,
-the official OpenAI Whisper checkpoints:
+아마 웨이트가 있는 허깅 페이스 허브의 모든 위스퍼 모델은 위스퍼 JAX와 호환됩니다. 여기에는 다음이 포함되지만 이에 국한되지는 않습니다,공식 OpenAI Whisper 체크 포인트:
 
 | Size     | Parameters | English-only                                         | Multilingual                                        |
 |----------|------------|------------------------------------------------------|-----------------------------------------------------|
@@ -181,10 +180,10 @@ the official OpenAI Whisper checkpoints:
 | large    | 1550 M     | x                                                    | [✓](https://huggingface.co/openai/whisper-large)    |
 | large-v2 | 1550 M     | x                                                    | [✓](https://huggingface.co/openai/whisper-large-v2) |
 
-Should you wish to use a fine-tuned Whisper checkpoint in Whisper JAX, you should first convert the PyTorch weights to Flax.
-This is straightforward through use of the `from_pt` argument, which will convert the PyTorch state dict to a frozen Flax 
-parameter dictionary on the fly. You can then push the converted Flax weights to the Hub to be used directly in Flax 
-the next time they are required. Note that converting weights from PyTorch to Flax requires both PyTorch and Flax to be installed.
+Whisper JAX에서 미세 조정된 Whisper 체크포인트를 사용하려면 먼저 PyTorch 가중치를 Flax로 변환해야 합니다.
+이는 파이토치 상태 딕셔너리를 프로즌 아마로 변환하는 `from_pt` 인수를 사용하면 간단하게 처리할 수 있습니다.
+매개변수 사전을 즉시 변환할 수 있습니다. 그런 다음 변환된 Flax 가중치를 Hub로 푸시하여 Flax에서 바로 사용할 수 있습니다.를 사용할 수 있습니다. 
+파이토치에서 플랙스로 가중치를 변환하려면 파이토치와 플랙스를 모두 설치해야 한다는 점에 유의하세요.
 
 For example, to convert the fine-tuned checkpoint [`sanchit-gandhi/whisper-small-hi`](https://huggingface.co/sanchit-gandhi/whisper-small-hi) from the blog post [Fine-Tuning Whisper](https://huggingface.co/blog/fine-tune-whisper):
 ```python
